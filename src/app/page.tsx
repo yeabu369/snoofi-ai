@@ -1,20 +1,38 @@
-'use client'
+'use server'
 
 import { useState } from 'react'
-import { useChat } from 'ai/react'
+import { Message } from 'ai/react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChatBanner } from '@/components/ChatBanner'
+import { getMockResponse } from '../../app/utils/mockResponse'
 
 export default function SNOOFIChat() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat()
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!input.trim()) return
+
+    const userMessage: Message = { id: String(Date.now()), role: 'user', content: input }
+    setMessages(prevMessages => [...prevMessages, userMessage])
+    setInput('')
     setIsTyping(true)
-    handleSubmit(e).finally(() => setIsTyping(false))
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    const botMessage: Message = {
+      id: String(Date.now() + 1),
+      role: 'assistant',
+      content: getMockResponse([...messages, userMessage])
+    }
+    setMessages(prevMessages => [...prevMessages, botMessage])
+    setIsTyping(false)
   }
 
   return (
@@ -40,10 +58,10 @@ export default function SNOOFIChat() {
           </ScrollArea>
         </CardContent>
         <CardFooter>
-          <form onSubmit={onSubmit} className="flex w-full space-x-2">
+          <form onSubmit={handleSubmit} className="flex w-full space-x-2">
             <Input
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Say something to SNOOFI..."
               className="flex-grow font-mono"
             />
